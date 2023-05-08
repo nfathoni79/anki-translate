@@ -91,6 +91,7 @@ const showModal = (title, description) => {
 const scrape = () => {
   translation.value = null
   scrapeLoading.value = true
+  note.value = ''
 
   ScrapeService.scrape(enText.value)
   .then(response => {
