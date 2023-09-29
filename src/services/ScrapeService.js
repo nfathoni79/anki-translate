@@ -6,8 +6,6 @@ const apiClient = axios.create({
 
 export default {
   scrape(enText) {
-    return apiClient.post('/scrape', {
-      enText: enText,
-    })
+    return apiClient.get(`/translate?en=${enText}`)
   }
 }
