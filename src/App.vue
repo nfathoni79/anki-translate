@@ -156,9 +156,9 @@ const addToAnki = () => {
             focus:ring focus:ring-blue-200 focus:ring-opacity-50">
         </label>
 
-        <AButton type="submit" class="mt-2 w-full">
+        <AButton type="submit" :disabled="scrapeLoading" class="mt-2 w-full">
           <Spinner v-if="scrapeLoading" class="mr-1 h-4 w-4 text-blue-50" />
-          Scrape
+          Translate
         </AButton>
       </form>
     </div>
@@ -182,7 +182,7 @@ const addToAnki = () => {
               focus:ring focus:ring-blue-200 focus:ring-opacity-50"></textarea>
           </label>
 
-          <AButton type="submit" class="mt-2 w-full">
+          <AButton type="submit" :disabled="ankiLoading" class="mt-2 w-full">
             <Spinner v-if="ankiLoading" class="mr-1 h-4 w-4 text-blue-50" />
             Add to Anki
           </AButton>
