@@ -12,6 +12,7 @@ const scrapeLoading = ref(false)
 const ankiLoading = ref(false)
 
 const enText = ref('')
+const browser = ref('0')
 const note = ref('')
 const translation = ref(null)
 
@@ -93,7 +94,7 @@ const scrape = () => {
   scrapeLoading.value = true
   note.value = ''
 
-  ScrapeService.scrape(enText.value)
+  ScrapeService.scrape(enText.value, browser.value)
   .then(response => {
     if (response.data.translation) {
       translation.value = response.data.translation
@@ -144,6 +145,24 @@ const addToAnki = () => {
   <div class="mx-auto max-w-md">
     <div>
       <img src="/img/logo.png" alt="Logo" class="mx-auto w-32 h-32" />
+    </div>
+
+    <div class="mt-4 flex justify-between items-center gap-4">
+      <p class="text-gray-800">Backend Browser</p>
+
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <input type="radio" id="browser-remote" name="browser" value="0"
+            v-model="browser">
+          <label for="browser-remote">Remote</label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="radio" id="browser-local" name="browser" value="1"
+            v-model="browser">
+          <label for="browser-local">Local</label>
+        </div>
+      </div>
     </div>
 
     <div class="mt-4">
