@@ -8,6 +8,12 @@ const scrape = (enText, usingLocalBrowser) => {
   return apiClient.get(`/translate?en=${enText}&local=${usingLocalBrowser}`)
 }
 
+const scrapeQuran = quranUrl => {
+  console.log(encodeURI(quranUrl))
+  return apiClient.get(`/quran?url=${encodeURIComponent(quranUrl)}`)
+}
+
 export default {
   scrape,
+  scrapeQuran,
 }

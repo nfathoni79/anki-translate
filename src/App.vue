@@ -11,10 +11,15 @@ import AnkiService from './services/AnkiService'
 const scrapeLoading = ref(false)
 const ankiLoading = ref(false)
 
+const mode = ref('translate')
+
 const enText = ref('')
 const browser = ref('0')
 const note = ref('')
 const translation = ref(null)
+
+const quranUrl = ref('')
+const quranData = ref(null)
 
 const modalShowing = ref(false)
 const modalTitle = ref('')
@@ -81,6 +86,22 @@ const preview = computed(() => {
   return `${english}<br>${phonetic}<hr class="my-2">${transHtmlString}<hr class="my-2">${defHtmlString}`
 })
 
+const quranPreview = computed(() => {
+  if (quranData.value == null) return ''
+
+  const { word, root, formIndex, formText, exampleText, exampleMeaning } = quranData.value
+
+  return `${word}<br>${root}<br>${formIndex}<br>${formText}<br>${exampleText}<br>${exampleMeaning}`
+})
+
+const getTabClasses = active => {
+  if (active) {
+    return 'bg-blue-100 font-semibold text-blue-600'
+  }
+
+  return 'hover:bg-gray-50 text-gray-900 hover:text-gray-600'
+}
+
 // Show dialog after calling API
 const showModal = (title, description) => {
   modalShowing.value = true
@@ -100,6 +121,32 @@ const scrape = () => {
       translation.value = response.data.translation
     } else {
       showModal('Error', 'Cannot get translation')
+    }
+  })
+  .catch(error => {
+    if (error.response) {
+      showModal('Error', error.response.data.message)
+    } else {
+      showModal('Error', error.message)
+    }
+  })
+  .finally(() => {
+    scrapeLoading.value = false
+  })
+}
+
+const scrapeQuran = () => {
+  quranData.value = null
+  scrapeLoading.value = true
+
+  console.log(quranUrl.value)
+
+  ScrapeService.scrapeQuran(quranUrl.value)
+  .then(response => {
+    if (response.data.quran) {
+      quranData.value = response.data.quran
+    } else {
+      showModal('Error', 'Cannot fetch')
     }
   })
   .catch(error => {
@@ -139,6 +186,32 @@ const addToAnki = () => {
     ankiLoading.value = false
   })
 }
+
+const addToAnkiQuran = () => {
+  ankiLoading.value = true
+  const {
+    word,
+    root,
+    formText,
+    exampleText,
+    exampleMeaning
+  } = quranData.value
+  
+  AnkiService.addNoteQuran(word, root, formText, exampleMeaning, exampleText)
+  .then(response => {
+    if (response.data.error == null) {
+      showModal('Info', 'Successfully added to Anki')
+    } else {
+      showModal('Error', response.data.error)
+    }
+  })
+  .catch(error => {
+    showModal('Error', error.message)
+  })
+  .finally(() => {
+    ankiLoading.value = false
+  })
+}
 </script>
 
 <template>
@@ -147,7 +220,21 @@ const addToAnki = () => {
       <img src="/img/logo.png" alt="Logo" class="mx-auto w-32 h-32" />
     </div>
 
-    <div class="mt-4 flex justify-between items-center gap-4">
+    <div class="mt-4 flex justify-stretch items-center gap-2 border-b border-gray-200 text-center">
+      <a href="#" @click.prevent="mode = 'translate'"
+        :class="`w-full inline-block rounded-t-lg p-4
+        ${getTabClasses(mode == 'translate')}`">
+        Translate
+      </a>
+
+      <a href="#" @click.prevent="mode = 'quran'"
+        :class="`w-full inline-block rounded-t-lg p-4
+        ${getTabClasses(mode == 'quran')}`">
+        Quran
+      </a>
+    </div>
+
+    <div v-if="mode == 'translate'" class="mt-4 flex justify-between items-center gap-4">
       <p class="text-gray-800">Backend Browser</p>
 
       <div class="flex items-center gap-8">
@@ -165,7 +252,7 @@ const addToAnki = () => {
       </div>
     </div>
 
-    <div class="mt-4">
+    <div v-if="mode == 'translate'" class="mt-4">
       <form @submit.prevent="scrape">
         <label class="block">
           <span class="text-gray-800">English Word</span>
@@ -182,7 +269,7 @@ const addToAnki = () => {
       </form>
     </div>
 
-    <div v-if="translation" class="mt-4">
+    <div v-if="mode == 'translate' && translation" class="mt-4">
       <div>
         <p class="text-gray-800">Card Preview</p>
         <div v-html="preview" class="mt-1 h-48 overflow-y-scroll
@@ -207,6 +294,40 @@ const addToAnki = () => {
           </AButton>
         </form>
       </div>
+    </div>
+
+    <div v-if="mode == 'quran'" class="mt-4">
+      <form @submit.prevent="scrapeQuran">
+        <label class="block">
+          <span class="text-gray-800">Quran Dictionary URL</span>
+          <input type="text" v-model="quranUrl" required
+            class="mt-1 block w-full
+            rounded-lg border-gray-300 focus:border-blue-300 shadow-sm
+            focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+        </label>
+
+        <AButton type="submit" :disabled="scrapeLoading" class="mt-2 w-full">
+          <Spinner v-if="scrapeLoading" class="mr-1 h-4 w-4 text-blue-50" />
+          Fetch
+        </AButton>
+      </form>
+    </div>
+
+    <div v-if="mode == 'quran' && quranData" class="mt-4">
+      <div>
+        <p class="text-gray-800">Card Preview</p>
+        <div v-html="quranPreview" class="mt-1 h-48 overflow-y-scroll
+          border border-gray-300 rounded-lg shadow-sm
+          px-4 py-2">
+        </div>
+      </div>
+
+      <form @submit.prevent="addToAnkiQuran">
+        <AButton type="submit" :disabled="ankiLoading" class="mt-2 w-full">
+          <Spinner v-if="ankiLoading" class="mr-1 h-4 w-4 text-blue-50" />
+          Add to Anki
+        </AButton>
+      </form>
     </div>
   </div>
 
